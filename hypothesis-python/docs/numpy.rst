@@ -52,3 +52,17 @@ and confirmed working with every Pandas minor version from 0.25 through to 1.1.
 Releases that are not the latest patch release of their minor version are not
 tested or officially supported, but will probably also work unless you hit a
 pandas bug.
+
+---------
+Array API
+---------
+
+Hypothesis offers strategies for `Array API <https://data-apis.org/>`_ adopting
+libraries in the ``hypothesis.extra.array_api`` package. See :issue:`3037` for
+more details.
+
+Similiar to the NumPy extra, :func:`~hypothesis.extra.array_api.arrays` is
+provided to generate arrays along with other useful strategies.
+
+.. automodule:: hypothesis.extra.array_api
+   :members:

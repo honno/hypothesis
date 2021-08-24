@@ -267,7 +267,7 @@ def from_dtype(
         # Whilst we know the boundary values of float dtypes we do not assign
         # them to the floats() strategy by default - passing min/max values will
         # modify test case reduction behaviour so that simple bugs may become
-        # harder for users to identiy.
+        # harder for users to identify.
         if min_value is not None:
             check_min_value(finfo)
             kw["min_value"] = min_value
@@ -719,7 +719,7 @@ def valid_tuple_axes(
     min_size: int = 0,
     max_size: Optional[int] = None,
 ) -> st.SearchStrategy[Shape]:
-    """Return a strategy for permissable tuple-values for the ``axis``
+    """Return a strategy for permissible tuple-values for the ``axis``
     argument in Array API sequential methods e.g. ``sum``, given the specified
     dimensionality.
 
@@ -1159,8 +1159,8 @@ def get_strategies_namespace(xp) -> SimpleNamespace:
     A :obj:`python:types.SimpleNamespace` is returned which contains all the
     strategy methods in this module but without requiring the ``xp`` argument.
 
-    Creating and using a strategies namespace for NumPy's Array API implemention
-    would go like this:
+    Creating and using a strategies namespace for NumPy's Array API
+    implementation would go like this:
 
     .. code-block:: pycon
 

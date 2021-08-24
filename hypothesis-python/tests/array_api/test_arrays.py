@@ -164,7 +164,7 @@ def test_minimize_float_arrays():
 
 def count_unique(array):
     """Returns the number of unique elements.
-    NaN values are treated as unique to eachother.
+    NaN values are treated as unique to each other.
 
     The Array API doesn't specify how ``unique()`` should behave for Nan values,
     so this method provides consistent behaviour.
@@ -177,7 +177,7 @@ def count_unique(array):
             n_unique += count
             break
 
-    # TODO: The Array API makes boolean indexing optinal, so in the future this
+    # TODO: The Array API makes boolean indexing optional, so in the future this
     # will need to be reworked if we want to test libraries other than NumPy.
     # If not possible, errors should be caught and the test skipped.
     filtered_array = array[~nan_index]

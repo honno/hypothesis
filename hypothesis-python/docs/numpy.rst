@@ -61,7 +61,7 @@ Hypothesis offers strategies for `Array API <https://data-apis.org/>`_ adopting
 libraries in the ``hypothesis.extra.array_api`` package. See :issue:`3037` for
 more details.
 
-Similiar to the NumPy extra, :func:`~hypothesis.extra.array_api.arrays` is
+Similar to the NumPy extra, :func:`~hypothesis.extra.array_api.arrays` is
 provided to generate arrays along with other useful strategies.
 
 .. automodule:: hypothesis.extra.array_api

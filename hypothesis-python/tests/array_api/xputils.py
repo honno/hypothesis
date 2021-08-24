@@ -5,8 +5,8 @@ from typing import Tuple
 
 import numpy as np
 import pytest
-from hypothesis.errors import HypothesisWarning
 
+from hypothesis.errors import HypothesisWarning
 from hypothesis.extra.array_api import get_strategies_namespace
 
 __all__ = [

@@ -1,19 +1,21 @@
 import pytest
-from hypothesis import given
-from hypothesis import strategies as st
-from hypothesis.errors import HypothesisWarning, InvalidArgument
 
+from hypothesis import given, strategies as st
+from hypothesis.errors import HypothesisWarning, InvalidArgument
 from hypothesis.extra.array_api import (
-    from_dtype,
+    DTYPE_NAMES,
+    FLOAT_NAMES,
+    INT_NAMES,
+    UINT_NAMES,
     arrays,
-    scalar_dtypes,
     boolean_dtypes,
-    numeric_dtypes,
-    integer_dtypes,
-    unsigned_integer_dtypes,
     floating_dtypes,
+    from_dtype,
+    integer_dtypes,
+    numeric_dtypes,
+    scalar_dtypes,
+    unsigned_integer_dtypes,
 )
-from hypothesis.extra.array_api import DTYPE_NAMES, FLOAT_NAMES, INT_NAMES, UINT_NAMES
 
 from tests.array_api.xputils import MOCK_NAME, create_array_module
 

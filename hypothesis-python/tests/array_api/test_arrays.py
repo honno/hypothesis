@@ -1,13 +1,12 @@
 import pytest
-from hypothesis import assume, given
-from hypothesis import strategies as st
-from hypothesis.errors import InvalidArgument, Unsatisfiable
 
+from hypothesis import assume, given, strategies as st
+from hypothesis.errors import InvalidArgument, Unsatisfiable
 from hypothesis.extra.array_api import DTYPE_NAMES, NUMERIC_NAMES
 
+from tests.array_api.xputils import COMPLIANT_XP, xp, xps
 from tests.common.debug import find_any, minimal
 from tests.common.utils import fails_with, flaky
-from tests.array_api.xputils import COMPLIANT_XP, xp, xps
 
 pytestmark = [pytest.mark.mockable_xp]
 
@@ -257,7 +256,6 @@ def test_may_fill_unique_arrays_with_nan():
 )
 def test_may_not_fill_unique_array_with_non_nan(_):
     """Unique strategy with just fill elements of 0.0 raises helpful error."""
-    pass
 
 
 @pytest.mark.parametrize(

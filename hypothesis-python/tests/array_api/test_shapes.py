@@ -2,14 +2,13 @@ from functools import reduce
 from itertools import zip_longest
 
 import pytest
-from hypothesis import HealthCheck, assume, given, note, settings
-from hypothesis import strategies as st
-from hypothesis.errors import InvalidArgument
 
+from hypothesis import HealthCheck, assume, given, note, settings, strategies as st
+from hypothesis.errors import InvalidArgument
 from hypothesis.extra.array_api import Shape
 
-from tests.common.debug import find_any, minimal
 from tests.array_api.xputils import xp, xps
+from tests.common.debug import find_any, minimal
 
 pytestmark = [pytest.mark.mockable_xp]
 

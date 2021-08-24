@@ -1,9 +1,9 @@
 import pytest
-from hypothesis import given, settings
-from hypothesis import strategies as st
 
-from tests.common.debug import minimal
+from hypothesis import given, settings, strategies as st
+
 from tests.array_api.xputils import xp, xps
+from tests.common.debug import minimal
 
 pytestmark = [pytest.mark.mockable_xp]
 

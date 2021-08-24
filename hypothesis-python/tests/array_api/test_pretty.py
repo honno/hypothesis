@@ -1,14 +1,14 @@
 import pytest
 
 from hypothesis.extra.array_api import (
-    from_dtype,
     arrays,
-    scalar_dtypes,
     boolean_dtypes,
-    numeric_dtypes,
-    integer_dtypes,
-    unsigned_integer_dtypes,
     floating_dtypes,
+    from_dtype,
+    integer_dtypes,
+    numeric_dtypes,
+    scalar_dtypes,
+    unsigned_integer_dtypes,
 )
 
 from tests.array_api.xputils import xp, xps

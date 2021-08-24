@@ -18,11 +18,10 @@ from typing import (
 )
 from warnings import warn
 
-from hypothesis import assume
-from hypothesis import strategies as st
+from hypothesis import assume, strategies as st
 from hypothesis.errors import HypothesisWarning, InvalidArgument
-from hypothesis.internal.coverage import check_function
 from hypothesis.internal.conjecture import utils as cu
+from hypothesis.internal.coverage import check_function
 from hypothesis.internal.validation import check_type, check_valid_interval
 from hypothesis.strategies._internal.strategies import check_strategy
 from hypothesis.strategies._internal.utils import defines_strategy

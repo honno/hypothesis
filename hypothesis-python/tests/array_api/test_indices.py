@@ -1,11 +1,11 @@
 import math
 
 import pytest
-from hypothesis import assume, given
-from hypothesis import strategies as st
 
-from tests.common.debug import find_any
+from hypothesis import assume, given, strategies as st
+
 from tests.array_api.xputils import xp, xps
+from tests.common.debug import find_any
 
 pytestmark = [pytest.mark.mockable_xp]
 

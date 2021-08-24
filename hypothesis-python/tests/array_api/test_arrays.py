@@ -38,7 +38,7 @@ def test_draw_arrays_from_scalar_names(name, data):
 
 
 @given(xps.array_shapes(), st.data())
-def test_can_draw_arrays_from_shapes(shape, data):
+def test_draw_arrays_from_shapes(shape, data):
     """Draw arrays from shapes."""
     array = data.draw(xps.arrays(xp.int8, shape))
     assert array.ndim == len(shape)
@@ -151,7 +151,7 @@ def test_minimize_large_uint_arrays():
 
 @pytest.mark.filterwarnings("ignore::RuntimeWarning")
 @flaky(max_runs=50, min_passes=1)
-def test_can_minimize_float_arrays():
+def test_minimize_float_arrays():
     """Strategy with float dtype minimizes to a good example.
 
     We filter runtime warnings and expect flaky array generation for
@@ -188,18 +188,22 @@ def count_unique(array):
 
 
 @given(xps.arrays(xp.int8, st.integers(0, 20), unique=True))
-def test_array_values_are_unique(array):
+def test_generate_unique_arrays(array):
+    """Generates unique arrays."""
     if hasattr(xp, "unique"):
         assert count_unique(array) == array.size
 
 
-def test_cannot_generate_unique_array_of_too_many_elements():
+def test_cannot_draw_unique_arrays_with_too_small_elements():
+    """Unique strategy with elements range smaller than its size raises helpful
+    error."""
     strat = xps.arrays(xp.int8, 10, elements=st.integers(0, 5), unique=True)
     with pytest.raises(Unsatisfiable):
         strat.example()
 
 
-def test_cannot_fill_with_non_castable_value():
+def test_cannot_fill_arrays_with_non_castable_value():
+    """Strategy with fill not castable to dtype raises helpful error."""
     strat = xps.arrays(xp.int8, 10, fill=st.just("not a castable value"))
     with pytest.raises(InvalidArgument):
         strat.example()
@@ -214,24 +218,21 @@ def test_cannot_fill_with_non_castable_value():
         unique=True,
     )
 )
-def test_array_values_are_unique_high_collision(array):
-    hits = array == 0.0
-    nzeros = 0
-    for i in range(array.size):
-        if hits[i]:
-            nzeros += 1
-    assert nzeros <= 1
+def test_generate_unique_arrays_with_high_collision_elements(array):
+    """Generates unique arrays with just elements of 0.0 and NaN fill."""
+    assert xp.sum(array == 0.0) <= 1
 
 
 @given(xps.arrays(xp.int8, (4,), elements=st.integers(0, 3), unique=True))
-def test_generates_all_values_for_unique_array(array):
-    # xp.unique() is optional for Array API libraries
+def test_generate_unique_arrays_using_all_elements(array):
+    """Unique strategy with elements range equal to its size will only generate
+    arrays with one of each possible elements."""
     if hasattr(xp, "unique"):
-        unique_values = xp.unique(array)
-        assert unique_values.size == array.size
+        assert count_unique(array) == array.size
 
 
-def test_may_fill_with_nan_when_unique_is_set():
+def test_may_fill_unique_arrays_with_nan():
+    """Unique strategy with NaN fill can generate arrays holding NaNs."""
     find_any(
         xps.arrays(
             dtype=xp.float32,
@@ -254,7 +255,8 @@ def test_may_fill_with_nan_when_unique_is_set():
         fill=st.just(0.0),
     )
 )
-def test_may_not_fill_with_non_nan_when_unique_is_set(_):
+def test_may_not_fill_unique_array_with_non_nan(_):
+    """Unique strategy with just fill elements of 0.0 raises helpful error."""
     pass
 
 

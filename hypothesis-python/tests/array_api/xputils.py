@@ -59,7 +59,7 @@ ATTRIBUTES = {
 
 
 @lru_cache()
-def create_array_module(*, exclude: Tuple[str, ...] = ()):
+def create_array_module(*, exclude: Tuple[str, ...] = ()) -> SimpleNamespace:
     attributes = copy(ATTRIBUTES)
     for attr in exclude:
         del attributes[attr]
@@ -72,7 +72,7 @@ def create_array_module(*, exclude: Tuple[str, ...] = ()):
 # to inform our test suite of whether the array module here is a mock or not.
 try:
     with pytest.warns(UserWarning):
-        from numpy import array_api as xp
+        from numpy import array_api as xp  # type: ignore
     xps = get_strategies_namespace(xp)
     COMPLIANT_XP = True
 except ImportError:

@@ -392,7 +392,7 @@ def test_does_not_reuse_distinct_integers(array):
 def test_may_reuse_distinct_integers_if_asked():
     if hasattr(xp, "unique"):
 
-        def nunique(array) -> int:
+        def nunique(array):
             unique_values = xp.unique(array)
             return unique_values.size
 

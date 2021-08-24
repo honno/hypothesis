@@ -110,7 +110,7 @@ def warn_on_missing_dtypes(xp, stubs: List[str]):
 
 def find_castable_builtin_for_dtype(xp, dtype: Type) -> Type[Union[bool, int, float]]:
     """Returns builtin type which can have values that are castable to the given
-    dtype, according to :array-ref:`type promotion rules <type_promotion.html>`.
+    dtype, according to :xp-ref:`type promotion rules <type_promotion.html>`.
 
     ``float`` is always returned for floating dtypes, as opposed to ``int``.
     """
@@ -210,11 +210,11 @@ def from_dtype(
     """Return a strategy for any value of the given dtype.
 
     Values generated are of the Python scalar which is
-    :array-ref:`promotable <type_promotion.html>` to ``dtype``, where the values
-    do not exceed its bounds.
+    :xp-ref:`promotable <type_promotion.html>` to ``dtype``, where the values do
+    not exceed its bounds.
 
     * ``dtype`` may be a dtype object or the string name of a
-      :array-ref:`valid dtype <data_types.html>`.
+      :xp-ref:`valid dtype <data_types.html>`.
 
     Compatible ``**kwargs`` are passed to the inferred strategy function for
     integers and floats.  This allows you to customise the min and max values,
@@ -427,10 +427,10 @@ def arrays(
     fill: Optional[st.SearchStrategy[Any]] = None,
     unique: bool = False,
 ) -> st.SearchStrategy:
-    """Returns a strategy for :array-ref:`arrays <array_object.html>`.
+    """Returns a strategy for :xp-ref:`arrays <array_object.html>`.
 
-    * ``dtype`` may be a :array-ref:`valid dtype <data_types.html>` object or
-      name, or a strategy that generates such values.
+    * ``dtype`` may be a :xp-ref:`valid dtype <data_types.html>` object or name,
+      or a strategy that generates such values.
     * ``shape`` may be an integer >= 0, a tuple of such integers, or a strategy
       that generates such values.
     * ``elements`` is a strategy for values to put in the array. If ``None``
@@ -596,7 +596,7 @@ def check_dtypes(xp, dtypes: List[Type], stubs: List[str]):
 @pretty_xp_repr
 @defines_strategy()
 def scalar_dtypes(xp) -> st.SearchStrategy[Type]:
-    """Return a strategy for all :array-ref:`valid dtype <data_types.html>` objects."""
+    """Return a strategy for all :xp-ref:`valid dtype <data_types.html>` objects."""
     infer_xp_is_compliant(xp)
     return st.one_of(boolean_dtypes(xp), numeric_dtypes(xp))
 
@@ -1108,7 +1108,7 @@ def indices(
     allow_ellipsis: bool = True,
     allow_none: bool = False,
 ) -> st.SearchStrategy[BasicIndex]:
-    """Return a strategy for :array-ref:`valid indices <indexing.html>` of
+    """Return a strategy for :xp-ref:`valid indices <indexing.html>` of
     arrays with the specified shape.
 
     It generates tuples containing some mix of integers, :obj:`python:slice`

@@ -98,7 +98,7 @@ extlinks = {
     "pypi": ("https://pypi.org/project/%s/", ""),
     "bpo": ("https://bugs.python.org/issue%s", "bpo-"),
     "np-ref": ("https://numpy.org/doc/stable/reference/%s", ""),
-    "array-ref": ("https://data-apis.org/array-api/latest/API_specification/%s", ""),
+    "xp-ref": ("https://data-apis.org/array-api/latest/API_specification/%s", ""),
     "wikipedia": ("https://en.wikipedia.org/wiki/%s", ""),
 }
 

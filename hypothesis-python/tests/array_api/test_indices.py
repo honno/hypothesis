@@ -36,7 +36,7 @@ pytestmark = [pytest.mark.mockable_xp]
 )
 def test_indices_options(condition):
     indexers = xps.array_shapes(min_dims=1, max_dims=32).flatmap(
-        lambda shape: xps.indices(shape, allow_none=True)
+        lambda shape: xps.indices(shape, allow_newaxis=True)
     )
     find_any(indexers, condition)
 
@@ -75,11 +75,11 @@ def test_indices_replaces_whole_axis_slices_with_ellipsis(idx):
     | xps.array_shapes(min_dims=1, min_side=0, max_side=10),
     min_dims=st.integers(1, 5),
     allow_ellipsis=st.booleans(),
-    allow_none=st.booleans(),
+    allow_newaxis=st.booleans(),
     data=st.data(),
 )
 def test_indices_generate_valid_indexers(
-    shape, min_dims, allow_ellipsis, allow_none, data
+    shape, min_dims, allow_ellipsis, allow_newaxis, data
 ):
     max_dims = data.draw(st.none() | st.integers(min_dims, 32), label="max_dims")
     indexer = data.draw(
@@ -88,12 +88,12 @@ def test_indices_generate_valid_indexers(
             min_dims=min_dims,
             max_dims=max_dims,
             allow_ellipsis=allow_ellipsis,
-            allow_none=allow_none,
+            allow_newaxis=allow_newaxis,
         ),
         label="indexer",
     )
     # Check that disallowed things are indeed absent
-    if not allow_none:
+    if not allow_newaxis:
         if isinstance(indexer, tuple):
             assert 0 <= len(indexer) <= len(shape) + int(allow_ellipsis)
         else:

@@ -16,6 +16,7 @@
 import math
 from collections import defaultdict
 from functools import update_wrapper, wraps
+from numbers import Real
 from types import SimpleNamespace
 from typing import (
     Any,
@@ -36,7 +37,12 @@ from warnings import warn
 from hypothesis import assume, strategies as st
 from hypothesis.errors import HypothesisWarning, InvalidArgument
 from hypothesis.internal.conjecture import utils as cu
-from hypothesis.internal.validation import check_type, check_valid_interval
+from hypothesis.internal.validation import (
+    check_type,
+    check_valid_bound,
+    check_valid_integer,
+    check_valid_interval,
+)
 from hypothesis.strategies._internal.strategies import check_strategy
 from hypothesis.strategies._internal.utils import defines_strategy
 
@@ -241,35 +247,34 @@ def from_dtype(
         dtype = dtype_from_name(xp, dtype)
     builtin = find_castable_builtin_for_dtype(xp, dtype)
 
-    def check_valid_minmax(bound, val, info_obj):
-        # TODO: check val
+    def check_valid_minmax(prefix, val, info_obj):
+        name = f"{prefix}_value"
+        check_valid_bound(val, name)
         if val < info_obj.min:
             raise InvalidArgument(
-                f"dtype {dtype} requires {bound}_value={val} "
-                f"to be at least {info_obj.min}"
+                f"dtype {dtype} requires {name}={val} to be at least {info_obj.min}"
             )
         elif val > info_obj.max:
             raise InvalidArgument(
-                f"dtype {dtype} requires {bound}_value={val} "
-                f"to be at most {info_obj.max}"
+                f"dtype {dtype} requires {name}={val} to be at most {info_obj.max}"
             )
 
     if builtin is bool:
         return st.booleans()
     elif builtin is int:
         iinfo = xp.iinfo(dtype)
-        kw = {}
         if min_value is None:
-            kw["min_value"] = iinfo.min
-        else:
-            check_valid_minmax("min", min_value, iinfo)
-            kw["min_value"] = min_value
+            min_value = iinfo.min
         if max_value is None:
-            kw["max_value"] = iinfo.max
-        else:
-            check_valid_minmax("max", max_value, iinfo)
-            kw["max_value"] = max_value
-        return st.integers(**kw)
+            max_value = iinfo.max
+        check_valid_integer(min_value, "min_value")
+        check_valid_integer(max_value, "max_value")
+        assert isinstance(min_value, int)
+        assert isinstance(max_value, int)
+        check_valid_minmax("min", min_value, iinfo)
+        check_valid_minmax("max", max_value, iinfo)
+        check_valid_interval(min_value, max_value, "min_value", "max_value")
+        return st.integers(min_value=min_value, max_value=max_value)
     else:
         finfo = xp.finfo(dtype)
         kw = {}
@@ -281,10 +286,16 @@ def from_dtype(
         # behaviour in https://github.com/HypothesisWorks/hypothesis/issues/2907.
         # Setting width should manage boundary values for us anyway.
         if min_value is not None:
+            check_valid_bound(min_value, "min_value")
+            assert isinstance(min_value, Real)
             check_valid_minmax("min", min_value, finfo)
             kw["min_value"] = min_value
         if max_value is not None:
+            check_valid_bound(max_value, "max_value")
+            assert isinstance(max_value, Real)
             check_valid_minmax("max", max_value, finfo)
+            if min_value is not None:
+                check_valid_interval(min_value, max_value, "min_value", "max_value")
             kw["max_value"] = max_value
 
         if allow_nan is not None:
@@ -541,7 +552,7 @@ def arrays(
     check_strategy(elements, "elements")
 
     if fill is None:
-        assert isinstance(elements, st.SearchStrategy)
+        assert isinstance(elements, st.SearchStrategy)  # for mypy
         if unique or not elements.has_reusable_values:
             fill = st.nothing()
         else:

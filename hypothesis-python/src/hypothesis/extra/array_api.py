@@ -16,7 +16,6 @@
 import math
 from collections import defaultdict
 from functools import update_wrapper, wraps
-from numbers import Real
 from types import SimpleNamespace
 from typing import (
     Any,
@@ -242,19 +241,16 @@ def from_dtype(
         dtype = dtype_from_name(xp, dtype)
     builtin = find_castable_builtin_for_dtype(xp, dtype)
 
-    def check_min_value(info_obj):
-        assert isinstance(min_value, Real)
-        if min_value < info_obj.min:
+    def check_valid_minmax(bound, val, info_obj):
+        # TODO: check val
+        if val < info_obj.min:
             raise InvalidArgument(
-                f"dtype {dtype} requires min_value={min_value} "
+                f"dtype {dtype} requires {bound}_value={val} "
                 f"to be at least {info_obj.min}"
             )
-
-    def check_max_value(info_obj):
-        assert isinstance(max_value, Real)
-        if max_value > info_obj.max:
+        elif val > info_obj.max:
             raise InvalidArgument(
-                f"dtype {dtype} requires max_value={max_value} "
+                f"dtype {dtype} requires {bound}_value={val} "
                 f"to be at most {info_obj.max}"
             )
 
@@ -266,17 +262,18 @@ def from_dtype(
         if min_value is None:
             kw["min_value"] = iinfo.min
         else:
-            check_min_value(iinfo)
+            check_valid_minmax("min", min_value, iinfo)
             kw["min_value"] = min_value
         if max_value is None:
             kw["max_value"] = iinfo.max
         else:
-            check_max_value(iinfo)
+            check_valid_minmax("max", max_value, iinfo)
             kw["max_value"] = max_value
         return st.integers(**kw)
     else:
         finfo = xp.finfo(dtype)
         kw = {}
+
         # Whilst we know the boundary values of float dtypes from finfo, we do
         # not assign them to the floats() strategy by default - passing min/max
         # values will modify test case reduction behaviour so that simple bugs
@@ -284,11 +281,12 @@ def from_dtype(
         # behaviour in https://github.com/HypothesisWorks/hypothesis/issues/2907.
         # Setting width should manage boundary values for us anyway.
         if min_value is not None:
-            check_min_value(finfo)
+            check_valid_minmax("min", min_value, finfo)
             kw["min_value"] = min_value
         if max_value is not None:
-            check_max_value(finfo)
+            check_valid_minmax("max", max_value, finfo)
             kw["max_value"] = max_value
+
         if allow_nan is not None:
             kw["allow_nan"] = allow_nan
         if allow_infinity is not None:
@@ -297,6 +295,7 @@ def from_dtype(
             kw["exclude_min"] = exclude_min
         if exclude_max is not None:
             kw["exclude_max"] = exclude_max
+
         return st.floats(width=finfo.bits, **kw)
 
 

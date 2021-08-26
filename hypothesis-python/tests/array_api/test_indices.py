@@ -30,6 +30,8 @@ pytestmark = [pytest.mark.mockable_xp]
     [
         lambda ix: Ellipsis in ix,
         lambda ix: Ellipsis not in ix,
+        lambda ix: None in ix,
+        lambda ix: None not in ix,
     ],
 )
 def test_indices_options(condition):

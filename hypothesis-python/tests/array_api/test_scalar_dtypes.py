@@ -67,4 +67,4 @@ def test_minimise_scalar_dtypes():
     ],
 )
 def test_can_specify_sizes_as_an_int(strat_func, sizes):
-    strat_func(sizes=sizes)
+    strat_func(sizes=sizes).example()

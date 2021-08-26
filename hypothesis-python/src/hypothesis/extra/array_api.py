@@ -125,7 +125,7 @@ def find_castable_builtin_for_dtype(
     """Returns builtin type which can have values that are castable to the given
     dtype, according to :xp-ref:`type promotion rules <type_promotion.html>`.
 
-    ``float`` is always returned for floating dtypes, as opposed to ``int``.
+    For floating dtypes we always return ``float``, even though ``int`` is also castable.
     """
     stubs = []
 

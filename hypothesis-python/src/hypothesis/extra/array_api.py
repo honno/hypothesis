@@ -25,7 +25,6 @@ from typing import (
     Iterator,
     List,
     Mapping,
-    NamedTuple,
     Optional,
     Sequence,
     Tuple,
@@ -37,17 +36,16 @@ from warnings import warn
 from hypothesis import strategies as st
 from hypothesis.errors import HypothesisWarning, InvalidArgument
 from hypothesis.extra.__array_helpers import (
+    BroadcastableShapes,
     Shape,
-    array_shapes,
-    basic_indices,
-    broadcastable_shapes,
-    mutually_broadcastable_shapes,
+    make_array_shapes,
+    make_basic_indices,
+    make_broadcastable_shapes,
+    make_mutually_broadcastable_shapes,
     valid_tuple_axes,
 )
-from hypothesis.extra.numpy import valid_tuple_axes
 from hypothesis.internal.conjecture import utils as cu
 from hypothesis.internal.validation import (
-    check_type,
     check_valid_bound,
     check_valid_integer,
     check_valid_interval,
@@ -562,6 +560,9 @@ def arrays(
     return ArrayStrategy(xp, elements, dtype, shape, fill, unique)
 
 
+array_shapes = make_array_shapes()
+
+
 def check_dtypes(xp: Any, dtypes: List[Type], stubs: List[str]) -> None:
     if len(dtypes) == 0:
         f_stubs = ", ".join(stubs)
@@ -701,15 +702,41 @@ valid_tuple_axes.__doc__ = f"""
     {valid_tuple_axes.__doc__}
     """
 
-# TODO: mutually_broadcastable_shapes exposes sig stuff
+broadcastable_shapes = make_broadcastable_shapes()
 
-# TODO: min_dims defaults to 1, prevent indices for 0d shapes
-indices = basic_indices
+_mutually_broadcastable_shapes = make_mutually_broadcastable_shapes()
+
+
+@defines_strategy()
+def mutually_broadcastable_shapes(
+    num_shapes: int,
+    *,
+    base_shape: Shape = (),
+    min_dims: int = 0,
+    max_dims: Optional[int] = None,
+    min_side: int = 1,
+    max_side: Optional[int] = None,
+) -> st.SearchStrategy[BroadcastableShapes]:
+    return _mutually_broadcastable_shapes(
+        num_shapes=num_shapes,
+        base_shape=base_shape,
+        min_dims=min_dims,
+        max_dims=max_dims,
+        min_side=min_side,
+        max_side=max_side,
+    )
+
+
+mutually_broadcastable_shapes.__doc__ = _mutually_broadcastable_shapes.__doc__
+
+
+indices = make_basic_indices()
+indices.__name__ = "indices"
 indices.__doc__ = f"""
     Return a strategy for :xp-ref:`valid indices <indexing.html>` of
     arrays with the specified shape.
 
-    {basic_indices.__doc__}
+    {indices.__doc__}
     """
 
 

@@ -277,10 +277,12 @@ def from_dtype(
     else:
         finfo = xp.finfo(dtype)
         kw = {}
-        # Whilst we know the boundary values of float dtypes we do not assign
-        # them to the floats() strategy by default - passing min/max values will
-        # modify test case reduction behaviour so that simple bugs may become
-        # harder for users to identify.
+        # Whilst we know the boundary values of float dtypes from finfo, we do
+        # not assign them to the floats() strategy by default - passing min/max
+        # values will modify test case reduction behaviour so that simple bugs
+        # may become harder for users to identify. We plan to improve floats()
+        # behaviour in https://github.com/HypothesisWorks/hypothesis/issues/2907.
+        # Setting width should manage boundary values for us anyway.
         if min_value is not None:
             check_min_value(finfo)
             kw["min_value"] = min_value

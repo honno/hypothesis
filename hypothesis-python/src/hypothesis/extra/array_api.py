@@ -35,15 +35,8 @@ from warnings import warn
 
 from hypothesis import strategies as st
 from hypothesis.errors import HypothesisWarning, InvalidArgument
-from hypothesis.extra.__array_helpers import (
-    BroadcastableShapes,
-    Shape,
-    array_shapes,
-    broadcastable_shapes,
-    make_basic_indices,
-    mutually_broadcastable_shapes as _mutually_broadcastable_shapes,
-    valid_tuple_axes,
-)
+from hypothesis.extra import _array_helpers
+from hypothesis.extra._array_helpers import BroadcastableShapes, Shape
 from hypothesis.internal.conjecture import utils as cu
 from hypothesis.internal.validation import (
     check_valid_bound,
@@ -560,6 +553,9 @@ def arrays(
     return ArrayStrategy(xp, elements, dtype, shape, fill, unique)
 
 
+array_shapes = _array_helpers.array_shapes
+
+
 def check_dtypes(xp: Any, dtypes: List[Type], stubs: List[str]) -> None:
     if len(dtypes) == 0:
         f_stubs = ", ".join(stubs)
@@ -691,6 +687,7 @@ def floating_dtypes(
     return st.sampled_from(dtypes)
 
 
+valid_tuple_axes = _array_helpers.valid_tuple_axes
 valid_tuple_axes.__doc__ = f"""
     Return a strategy for permissible tuple-values for the ``axis``
     argument in Array API sequential methods e.g. ``sum``, given the specified
@@ -698,6 +695,8 @@ valid_tuple_axes.__doc__ = f"""
 
     {valid_tuple_axes.__doc__}
     """
+
+broadcastable_shapes = _array_helpers.broadcastable_shapes
 
 
 @defines_strategy()
@@ -710,7 +709,7 @@ def mutually_broadcastable_shapes(
     min_side: int = 1,
     max_side: Optional[int] = None,
 ) -> st.SearchStrategy[BroadcastableShapes]:
-    return _mutually_broadcastable_shapes(
+    return _array_helpers.mutually_broadcastable_shapes(
         num_shapes=num_shapes,
         base_shape=base_shape,
         min_dims=min_dims,
@@ -720,10 +719,12 @@ def mutually_broadcastable_shapes(
     )
 
 
-mutually_broadcastable_shapes.__doc__ = _mutually_broadcastable_shapes.__doc__
+mutually_broadcastable_shapes.__doc__ = (
+    _array_helpers.mutually_broadcastable_shapes.__doc__
+)
 
 
-indices = make_basic_indices(allow_0d_index=False)
+indices = _array_helpers.make_basic_indices(allow_0d_index=False)
 indices.__name__ = "indices"
 indices.__doc__ = f"""
     Return a strategy for :xp-ref:`valid indices <indexing.html>` of

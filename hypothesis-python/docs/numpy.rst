@@ -64,5 +64,10 @@ more details.
 Similar to the NumPy extra, :func:`~hypothesis.extra.array_api.arrays` is
 provided to generate arrays along with other useful strategies.
 
+.. warning::
+   The Array API standard is not yet finalised. We may therefore make breaking
+   changes in minor releases if necessary to support newer versions of the
+   standard.
+
 .. automodule:: hypothesis.extra.array_api
    :members:

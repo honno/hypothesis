@@ -15,12 +15,10 @@
 
 import math
 from collections import defaultdict
-from functools import update_wrapper, wraps
 from numbers import Real
 from types import SimpleNamespace
 from typing import (
     Any,
-    Callable,
     Iterable,
     Iterator,
     List,
@@ -72,18 +70,28 @@ NUMERIC_NAMES = ALL_INT_NAMES + FLOAT_NAMES
 DTYPE_NAMES = ["bool"] + NUMERIC_NAMES
 
 
-def infer_xp_is_compliant(xp):
-    try:
-        array = xp.zeros(1)
-        array.__array_namespace__()
-    except Exception:
-        warn(
-            f"Could not determine whether module {xp} is an Array API library",
-            HypothesisWarning,
-        )
+class PrettyArrayModule:
+    """Wrapper for array modules so that they may have nice reprs."""
+
+    def __init__(self, xp):
+        self._xp = xp
+        if hasattr(xp, "_xp"):
+            raise NotImplementedError(f"Array module {xp} cannot have attribute _xp")
+
+    def __getattr__(self, name):
+        return getattr(self._xp, name)
+
+    def __repr__(self):
+        try:
+            return self._xp.__name__
+        except AttributeError:
+            return repr(self._xp)
+
+    def __str__(self):
+        return repr(self)
 
 
-def check_xp_attributes(xp: Any, attributes: List[str]) -> None:
+def check_xp_attributes(xp: PrettyArrayModule, attributes: List[str]) -> None:
     missing_attrs = [attr for attr in attributes if not hasattr(xp, attr)]
     if len(missing_attrs) > 0:
         f_attrs = ", ".join(missing_attrs)
@@ -93,7 +101,7 @@ def check_xp_attributes(xp: Any, attributes: List[str]) -> None:
 
 
 def partition_attributes_and_stubs(
-    xp: Any, attributes: Iterable[str]
+    xp: PrettyArrayModule, attributes: Iterable[str]
 ) -> Tuple[List[Any], List[str]]:
     non_stubs = []
     stubs = []
@@ -106,7 +114,7 @@ def partition_attributes_and_stubs(
     return non_stubs, stubs
 
 
-def warn_on_missing_dtypes(xp: Any, stubs: List[str]) -> None:
+def warn_on_missing_dtypes(xp: PrettyArrayModule, stubs: List[str]) -> None:
     f_stubs = ", ".join(stubs)
     warn(
         f"Array module {xp} does not have the following "
@@ -116,7 +124,7 @@ def warn_on_missing_dtypes(xp: Any, stubs: List[str]) -> None:
 
 
 def find_castable_builtin_for_dtype(
-    xp: Any, dtype: Type
+    xp: PrettyArrayModule, dtype: Type
 ) -> Type[Union[bool, int, float]]:
     """Returns builtin type which can have values that are castable to the given
     dtype, according to :xp-ref:`type promotion rules <type_promotion.html>`.
@@ -147,7 +155,7 @@ def find_castable_builtin_for_dtype(
     raise InvalidArgument("dtype {dtype} not recognised in {xp}")
 
 
-def dtype_from_name(xp: Any, name: str) -> Type:
+def dtype_from_name(xp: PrettyArrayModule, name: str) -> Type:
     if name in DTYPE_NAMES:
         try:
             return getattr(xp, name)
@@ -163,50 +171,8 @@ def dtype_from_name(xp: Any, name: str) -> Type:
         )
 
 
-class PrettyArrayModule:
-    def __init__(self, xp):
-        self._xp = xp
-        if hasattr(xp, "_xp"):
-            raise NotImplementedError(f"Array module {xp} cannot have attribute _xp")
-
-    def __getattr__(self, name):
-        return getattr(self._xp, name)
-
-    def __repr__(self):
-        try:
-            return self._xp.__name__
-        except AttributeError:
-            return repr(self._xp)
-
-    def __str__(self):
-        return repr(self)
-
-
-def pretty_xp_repr(func: Callable) -> Callable:
-    """Wraps array module so it will have a pretty repr() and str().
-
-    This namely prevents returned strategies having an ugly repr by way of the
-    the defines_strategy decorator, which wraps the strategy in a LazyStrategy.
-    A nice side effect is errors and warnings are easier to write.
-
-    If ``xp`` is already a PrettyArrayModule then this behaviour is skipped.
-    This prevents wrapped modules being wrapped again, which would happen when
-    using the decorated strategies in practice.
-    """
-
-    @wraps(func)
-    def inner(xp, *args, **kwargs):
-        if not isinstance(xp, PrettyArrayModule):
-            xp = PrettyArrayModule(xp)
-        return func(xp, *args, **kwargs)
-
-    return inner
-
-
-@pretty_xp_repr
-@defines_strategy(force_reusable_values=True)
-def from_dtype(
-    xp: Any,
+def _from_dtype(
+    xp: PrettyArrayModule,
     dtype: Union[Type, str],
     *,
     min_value: Optional[Union[int, float]] = None,
@@ -228,10 +194,9 @@ def from_dtype(
     Compatible ``**kwargs`` are passed to the inferred strategy function for
     integers and floats.  This allows you to customise the min and max values,
     and exclude non-finite numbers. This is particularly useful when kwargs are
-    passed through from :func:`arrays`, as it seamlessly handles the ``width``
+    passed through from ``xps.arrays()``, as it seamlessly handles the ``width``
     or other representable bounds for you.
     """
-    infer_xp_is_compliant(xp)
     check_xp_attributes(xp, ["iinfo", "finfo"])
 
     if isinstance(dtype, str):
@@ -432,10 +397,8 @@ class ArrayStrategy(st.SearchStrategy):
         return result
 
 
-@pretty_xp_repr
-@defines_strategy(force_reusable_values=True)
-def arrays(
-    xp: Any,
+def _arrays(
+    xp: PrettyArrayModule,
     dtype: Union[Type, str, st.SearchStrategy[Type], st.SearchStrategy[str]],
     shape: Union[int, Shape, st.SearchStrategy[Shape]],
     *,
@@ -469,7 +432,7 @@ def arrays(
     .. code-block:: pycon
 
       >>> from numpy import array_api as xp
-      >>> arrays(xp, xp.int8, (2, 3)).example()
+      >>> xps.arrays(xp, xp.int8, (2, 3)).example()
       Array([[-8,  6,  3],
              [-6,  4,  6]], dtype=int8)
 
@@ -478,7 +441,7 @@ def arrays(
 
     .. code-block:: pycon
 
-      >>> arrays(xp, xp.int8, 3, elements={"min_value": 10}).example()
+      >>> xps.arrays(xp, xp.int8, 3, elements={"min_value": 10}).example()
       Array([125, 13, 79], dtype=int8)
 
     Refer to :doc:`What you can generate and how <data>` for passing
@@ -486,7 +449,7 @@ def arrays(
 
     .. code-block:: pycon
 
-      >>> arrays(xp, xp.float32, 3, elements=floats(0, 1, width=32)).example()
+      >>> xps.arrays(xp, xp.float32, 3, elements=floats(0, 1, width=32)).example()
       Array([ 0.88974794,  0.77387938,  0.1977879 ], dtype=float32)
 
     Array values are generated in two parts:
@@ -514,16 +477,15 @@ def arrays(
     your tests to run in reasonable time.
     """
 
-    infer_xp_is_compliant(xp)
     check_xp_attributes(xp, ["zeros", "full", "all", "isnan", "isfinite", "reshape"])
 
     if isinstance(dtype, st.SearchStrategy):
         return dtype.flatmap(
-            lambda d: arrays(xp, d, shape, elements=elements, fill=fill, unique=unique)
+            lambda d: _arrays(xp, d, shape, elements=elements, fill=fill, unique=unique)
         )
     if isinstance(shape, st.SearchStrategy):
         return shape.flatmap(
-            lambda s: arrays(xp, dtype, s, elements=elements, fill=fill, unique=unique)
+            lambda s: _arrays(xp, dtype, s, elements=elements, fill=fill, unique=unique)
         )
 
     if isinstance(dtype, str):
@@ -537,9 +499,9 @@ def arrays(
         )
 
     if elements is None:
-        elements = from_dtype(xp, dtype)
+        elements = _from_dtype(xp, dtype)
     elif isinstance(elements, Mapping):
-        elements = from_dtype(xp, dtype, **elements)
+        elements = _from_dtype(xp, dtype, **elements)
     check_strategy(elements, "elements")
 
     if fill is None:
@@ -553,7 +515,7 @@ def arrays(
     return ArrayStrategy(xp, elements, dtype, shape, fill, unique)
 
 
-def check_dtypes(xp: Any, dtypes: List[Type], stubs: List[str]) -> None:
+def check_dtypes(xp: PrettyArrayModule, dtypes: List[Type], stubs: List[str]) -> None:
     if len(dtypes) == 0:
         f_stubs = ", ".join(stubs)
         raise InvalidArgument(
@@ -564,18 +526,13 @@ def check_dtypes(xp: Any, dtypes: List[Type], stubs: List[str]) -> None:
         warn_on_missing_dtypes(xp, stubs)
 
 
-@pretty_xp_repr
-@defines_strategy()
-def scalar_dtypes(xp: Any) -> st.SearchStrategy[Type]:
+def _scalar_dtypes(xp: PrettyArrayModule) -> st.SearchStrategy[Type]:
     """Return a strategy for all :xp-ref:`valid dtype <data_types.html>` objects."""
-    infer_xp_is_compliant(xp)
-    return st.one_of(boolean_dtypes(xp), numeric_dtypes(xp))
+    return st.one_of(_boolean_dtypes(xp), _numeric_dtypes(xp))
 
 
-@pretty_xp_repr
-@defines_strategy()
-def boolean_dtypes(xp: Any) -> st.SearchStrategy[Type]:
-    infer_xp_is_compliant(xp)
+def _boolean_dtypes(xp: PrettyArrayModule) -> st.SearchStrategy[Type]:
+    """Return a strategy for just the boolean dtype object."""
     try:
         return st.just(xp.bool)
     except AttributeError:
@@ -584,15 +541,12 @@ def boolean_dtypes(xp: Any) -> st.SearchStrategy[Type]:
         ) from None
 
 
-@pretty_xp_repr
-@defines_strategy()
-def numeric_dtypes(xp: Any) -> st.SearchStrategy[Type]:
+def _numeric_dtypes(xp: PrettyArrayModule) -> st.SearchStrategy[Type]:
     """Return a strategy for all numeric dtype objects."""
-    infer_xp_is_compliant(xp)
     return st.one_of(
-        integer_dtypes(xp),
-        unsigned_integer_dtypes(xp),
-        floating_dtypes(xp),
+        _integer_dtypes(xp),
+        _unsigned_integer_dtypes(xp),
+        _floating_dtypes(xp),
     )
 
 
@@ -617,17 +571,14 @@ def numeric_dtype_names(base_name: str, sizes: Sequence[int]) -> Iterator[str]:
         yield f"{base_name}{size}"
 
 
-@pretty_xp_repr
-@defines_strategy()
-def integer_dtypes(
-    xp: Any, *, sizes: Union[int, Sequence[int]] = (8, 16, 32, 64)
+def _integer_dtypes(
+    xp: PrettyArrayModule, *, sizes: Union[int, Sequence[int]] = (8, 16, 32, 64)
 ) -> st.SearchStrategy[Type]:
     """Return a strategy for signed integer dtype objects.
 
     ``sizes`` contains the signed integer sizes in bits, defaulting to
     ``(8, 16, 32, 64)`` which covers all valid sizes.
     """
-    infer_xp_is_compliant(xp)
     if isinstance(sizes, int):
         sizes = (sizes,)
     check_valid_sizes("int", sizes, (8, 16, 32, 64))
@@ -638,17 +589,14 @@ def integer_dtypes(
     return st.sampled_from(dtypes)
 
 
-@pretty_xp_repr
-@defines_strategy()
-def unsigned_integer_dtypes(
-    xp: Any, *, sizes: Union[int, Sequence[int]] = (8, 16, 32, 64)
+def _unsigned_integer_dtypes(
+    xp: PrettyArrayModule, *, sizes: Union[int, Sequence[int]] = (8, 16, 32, 64)
 ) -> st.SearchStrategy[Type]:
     """Return a strategy for unsigned integer dtype objects.
 
     ``sizes`` contains the unsigned integer sizes in bits, defaulting to
     ``(8, 16, 32, 64)`` which covers all valid sizes.
     """
-    infer_xp_is_compliant(xp)
 
     if isinstance(sizes, int):
         sizes = (sizes,)
@@ -662,10 +610,8 @@ def unsigned_integer_dtypes(
     return st.sampled_from(dtypes)
 
 
-@pretty_xp_repr
-@defines_strategy()
-def floating_dtypes(
-    xp: Any, *, sizes: Union[int, Sequence[int]] = (32, 64)
+def _floating_dtypes(
+    xp: PrettyArrayModule, *, sizes: Union[int, Sequence[int]] = (32, 64)
 ) -> st.SearchStrategy[Type]:
     """Return a strategy for floating-point dtype objects.
 
@@ -673,7 +619,6 @@ def floating_dtypes(
     ``(32, 64)`` which covers all valid sizes.
     """
 
-    infer_xp_is_compliant(xp)
     if isinstance(sizes, int):
         sizes = (sizes,)
     check_valid_sizes("int", sizes, (32, 64))
@@ -777,7 +722,6 @@ def indices(
     )
 
 
-@pretty_xp_repr
 def make_strategies_namespace(xp: Any) -> SimpleNamespace:
     """Creates a strategies namespace for the given array module.
 
@@ -801,33 +745,106 @@ def make_strategies_namespace(xp: Any) -> SimpleNamespace:
       True
 
     """
-    infer_xp_is_compliant(xp)
+    xp = PrettyArrayModule(xp)
+
+    try:
+        array = xp.zeros(1)
+        array.__array_namespace__()
+    except Exception:
+        warn(
+            f"Could not determine whether module {xp} is an Array API library",
+            HypothesisWarning,
+        )
+
+    @defines_strategy(force_reusable_values=True)
+    def from_dtype(
+        dtype: Union[Type, str],
+        *,
+        min_value: Optional[Union[int, float]] = None,
+        max_value: Optional[Union[int, float]] = None,
+        allow_nan: Optional[bool] = None,
+        allow_infinity: Optional[bool] = None,
+        exclude_min: Optional[bool] = None,
+        exclude_max: Optional[bool] = None,
+    ) -> st.SearchStrategy[Union[bool, int, float]]:
+        return _from_dtype(
+            xp,
+            dtype,
+            min_value=min_value,
+            max_value=max_value,
+            allow_nan=allow_nan,
+            allow_infinity=allow_infinity,
+            exclude_min=exclude_min,
+            exclude_max=exclude_max,
+        )
+
+    @defines_strategy(force_reusable_values=True)
+    def arrays(
+        dtype: Union[Type, str, st.SearchStrategy[Type], st.SearchStrategy[str]],
+        shape: Union[int, Shape, st.SearchStrategy[Shape]],
+        *,
+        elements: Optional[st.SearchStrategy] = None,
+        fill: Optional[st.SearchStrategy[Any]] = None,
+        unique: bool = False,
+    ) -> st.SearchStrategy:
+        return _arrays(
+            xp,
+            dtype,
+            shape,
+            elements=elements,
+            fill=fill,
+            unique=unique,
+        )
+
+    @defines_strategy()
+    def scalar_dtypes() -> st.SearchStrategy[Type]:
+        return _scalar_dtypes(xp)
+
+    @defines_strategy()
+    def boolean_dtypes() -> st.SearchStrategy[Type]:
+        return _boolean_dtypes(xp)
+
+    @defines_strategy()
+    def numeric_dtypes() -> st.SearchStrategy[Type]:
+        return _numeric_dtypes(xp)
+
+    @defines_strategy()
+    def integer_dtypes(
+        *, sizes: Union[int, Sequence[int]] = (8, 16, 32, 64)
+    ) -> st.SearchStrategy[Type]:
+        return _integer_dtypes(xp, sizes=sizes)
+
+    @defines_strategy()
+    def unsigned_integer_dtypes(
+        *, sizes: Union[int, Sequence[int]] = (8, 16, 32, 64)
+    ) -> st.SearchStrategy[Type]:
+        return _unsigned_integer_dtypes(xp, sizes=sizes)
+
+    @defines_strategy()
+    def floating_dtypes(
+        *, sizes: Union[int, Sequence[int]] = (32, 64)
+    ) -> st.SearchStrategy[Type]:
+        return _floating_dtypes(xp, sizes=sizes)
+
+    from_dtype.__doc__ = _from_dtype.__doc__
+    arrays.__doc__ = _arrays.__doc__
+    scalar_dtypes.__doc__ = _scalar_dtypes.__doc__
+    boolean_dtypes.__doc__ = _boolean_dtypes.__doc__
+    numeric_dtypes.__doc__ = _numeric_dtypes.__doc__
+    integer_dtypes.__doc__ = _integer_dtypes.__doc__
+    unsigned_integer_dtypes.__doc__ = _unsigned_integer_dtypes.__doc__
+    floating_dtypes.__doc__ = _floating_dtypes.__doc__
 
     return SimpleNamespace(
-        from_dtype=update_wrapper(
-            lambda *a, **kw: from_dtype(xp, *a, **kw), from_dtype
-        ),
-        arrays=update_wrapper(lambda *a, **kw: arrays(xp, *a, **kw), arrays),
+        from_dtype=from_dtype,
+        arrays=arrays,
         array_shapes=array_shapes,
-        scalar_dtypes=update_wrapper(
-            lambda *a, **kw: scalar_dtypes(xp, *a, **kw), scalar_dtypes
-        ),
-        boolean_dtypes=update_wrapper(
-            lambda *a, **kw: boolean_dtypes(xp, *a, **kw), boolean_dtypes
-        ),
-        numeric_dtypes=update_wrapper(
-            lambda *a, **kw: numeric_dtypes(xp, *a, **kw), numeric_dtypes
-        ),
-        integer_dtypes=update_wrapper(
-            lambda *a, **kw: integer_dtypes(xp, *a, **kw), integer_dtypes
-        ),
-        unsigned_integer_dtypes=update_wrapper(
-            lambda *a, **kw: unsigned_integer_dtypes(xp, *a, **kw),
-            unsigned_integer_dtypes,
-        ),
-        floating_dtypes=update_wrapper(
-            lambda *a, **kw: floating_dtypes(xp, *a, **kw), floating_dtypes
-        ),
+        scalar_dtypes=scalar_dtypes,
+        boolean_dtypes=boolean_dtypes,
+        numeric_dtypes=numeric_dtypes,
+        integer_dtypes=integer_dtypes,
+        unsigned_integer_dtypes=unsigned_integer_dtypes,
+        floating_dtypes=floating_dtypes,
         valid_tuple_axes=valid_tuple_axes,
         broadcastable_shapes=broadcastable_shapes,
         mutually_broadcastable_shapes=mutually_broadcastable_shapes,

@@ -22,92 +22,74 @@ from hypothesis.extra.array_api import (
     FLOAT_NAMES,
     INT_NAMES,
     UINT_NAMES,
-    arrays,
-    boolean_dtypes,
-    floating_dtypes,
-    from_dtype,
-    integer_dtypes,
-    numeric_dtypes,
-    scalar_dtypes,
-    unsigned_integer_dtypes,
+    make_strategies_namespace,
 )
 
 from tests.array_api.xputils import MOCK_NAME, create_array_module
 
-noncompliant_xp = create_array_module()
 
-
-@pytest.mark.parametrize(
-    "func, args",
-    [
-        (from_dtype, ["int8"]),
-        (arrays, ["int8", 5]),
-        (scalar_dtypes, []),
-        (boolean_dtypes, []),
-        (numeric_dtypes, []),
-        (integer_dtypes, []),
-        (unsigned_integer_dtypes, []),
-        (floating_dtypes, []),
-    ],
-)
-def test_warning_on_noncompliant_arrays(func, args):
-    """Strategies using array modules with non-compliant array objects execute
-    with a warning"""
+def test_warning_on_noncompliant_xp():
+    """Using non-compliant array modules raises helpful warning"""
+    xp = create_array_module()
     with pytest.warns(HypothesisWarning, match=f"determine.*{MOCK_NAME}.*Array API"):
-        func(noncompliant_xp, *args).example()
+        make_strategies_namespace(xp)
 
 
 @pytest.mark.filterwarnings(f"ignore:.*determine.*{MOCK_NAME}.*Array API.*")
 @pytest.mark.parametrize(
-    "func, args, attr",
-    [(from_dtype, ["int8"], "iinfo"), (arrays, ["int8", 5], "full")],
+    "stratname, args, attr",
+    [("from_dtype", ["int8"], "iinfo"), ("arrays", ["int8", 5], "full")],
 )
-def test_error_on_missing_attr(func, args, attr):
+def test_error_on_missing_attr(stratname, args, attr):
     """Strategies raise helpful error when using array modules that lack
     required attributes."""
     xp = create_array_module(exclude=(attr,))
+    xps = make_strategies_namespace(xp)
+    func = getattr(xps, stratname)
     with pytest.raises(InvalidArgument, match=f"{MOCK_NAME}.*required.*{attr}"):
-        func(xp, *args).example()
+        func(*args).example()
 
 
 dtypeless_xp = create_array_module(exclude=tuple(DTYPE_NAMES))
+with pytest.warns(HypothesisWarning):
+    dtypeless_xps = make_strategies_namespace(dtypeless_xp)
 
 
 @pytest.mark.filterwarnings(f"ignore:.*determine.*{MOCK_NAME}.*Array API.*")
 @pytest.mark.parametrize(
-    "func",
+    "stratname",
     [
-        scalar_dtypes,
-        boolean_dtypes,
-        numeric_dtypes,
-        integer_dtypes,
-        unsigned_integer_dtypes,
-        floating_dtypes,
+        "scalar_dtypes",
+        "boolean_dtypes",
+        "numeric_dtypes",
+        "integer_dtypes",
+        "unsigned_integer_dtypes",
+        "floating_dtypes",
     ],
 )
-def test_error_on_missing_dtypes(func):
+def test_error_on_missing_dtypes(stratname):
     """Strategies raise helpful error when using array modules that lack
     required dtypes."""
+    func = getattr(dtypeless_xps, stratname)
     with pytest.raises(InvalidArgument, match=f"{MOCK_NAME}.*dtype.*namespace"):
-        func(dtypeless_xp).example()
+        func().example()
 
 
 @pytest.mark.filterwarnings(f"ignore:.*determine.*{MOCK_NAME}.*Array API.*")
 @pytest.mark.parametrize(
-    "func, keep_anys",
+    "stratname, keep_anys",
     [
-        (scalar_dtypes, [INT_NAMES, UINT_NAMES, FLOAT_NAMES]),
-        (numeric_dtypes, [INT_NAMES, UINT_NAMES, FLOAT_NAMES]),
-        (integer_dtypes, [INT_NAMES]),
-        (unsigned_integer_dtypes, [UINT_NAMES]),
-        (floating_dtypes, [FLOAT_NAMES]),
+        ("scalar_dtypes", [INT_NAMES, UINT_NAMES, FLOAT_NAMES]),
+        ("numeric_dtypes", [INT_NAMES, UINT_NAMES, FLOAT_NAMES]),
+        ("integer_dtypes", [INT_NAMES]),
+        ("unsigned_integer_dtypes", [UINT_NAMES]),
+        ("floating_dtypes", [FLOAT_NAMES]),
     ],
 )
 @given(st.data())
-def test_warning_on_partial_dtypes(func, keep_anys, data):
+def test_warning_on_partial_dtypes(stratname, keep_anys, data):
     """Strategies using array modules with at least one of a dtype in the
-    necessary category/categories execute with a warning.
-    """
+    necessary category/categories execute with a warning."""
     exclude = []
     for keep_any in keep_anys:
         exclude.extend(
@@ -121,5 +103,7 @@ def test_warning_on_partial_dtypes(func, keep_anys, data):
             )
         )
     xp = create_array_module(exclude=tuple(exclude))
+    xps = make_strategies_namespace(xp)
+    func = getattr(xps, stratname)
     with pytest.warns(HypothesisWarning, match=f"{MOCK_NAME}.*dtype.*namespace"):
-        data.draw(func(xp))
+        data.draw(func())

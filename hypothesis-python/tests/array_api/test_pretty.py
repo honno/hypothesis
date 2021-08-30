@@ -13,6 +13,8 @@
 #
 # END HEADER
 
+from inspect import signature
+
 import pytest
 
 from tests.array_api.xputils import xp, xps
@@ -38,10 +40,12 @@ pytestmark = [pytest.mark.mockable_xp]
         "indices",
     ],
 )
-def test_namespaced_methods_wrapped(name):
-    """Namespaced strategies have readable method names, even if they are lambdas."""
+def test_namespaced_methods_meta(name):
+    """Namespaced method objects have good meta attributes."""
     func = getattr(xps, name)
     assert func.__name__ == name
+    assert func.__doc__ is not None
+    assert "xp" not in signature(func).parameters.keys()
 
 
 @pytest.mark.parametrize(
@@ -49,16 +53,21 @@ def test_namespaced_methods_wrapped(name):
     [
         ("from_dtype", xps.from_dtype(xp.int8)),
         ("arrays", xps.arrays(xp.int8, 5)),
+        ("array_shapes", xps.array_shapes()),
         ("scalar_dtypes", xps.scalar_dtypes()),
         ("boolean_dtypes", xps.boolean_dtypes()),
         ("numeric_dtypes", xps.numeric_dtypes()),
         ("integer_dtypes", xps.integer_dtypes()),
         ("unsigned_integer_dtypes", xps.unsigned_integer_dtypes()),
         ("floating_dtypes", xps.floating_dtypes()),
+        ("valid_tuple_axes", xps.valid_tuple_axes(0)),
+        ("broadcastable_shapes", xps.broadcastable_shapes(())),
+        ("mutually_broadcastable_shapes", xps.mutually_broadcastable_shapes(3)),
+        ("indices", xps.indices((5,))),
     ],
 )
-def test_xp_strategies_pretty_repr(name, strat):
-    """Strategies that take xp use its __name__ for their own repr."""
+def test_namespaced_strategies_repr(name, strat):
+    """Namespaced strategies have good repr."""
     assert repr(strat).startswith(name), f"{name} not in strat repr"
     assert len(repr(strat)) < 100, "strat repr looks too long"
-    assert xp.__name__ in repr(strat), f"{xp.__name__} not in strat repr"
+    assert xp.__name__ not in repr(strat), f"{xp.__name__} in strat repr"

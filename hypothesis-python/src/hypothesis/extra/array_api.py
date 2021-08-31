@@ -27,6 +27,7 @@ from typing import (
     Sequence,
     Tuple,
     Type,
+    TypeVar,
     Union,
 )
 from warnings import warn
@@ -71,6 +72,8 @@ FLOAT_NAMES = ["float32", "float64"]
 NUMERIC_NAMES = ALL_INT_NAMES + FLOAT_NAMES
 DTYPE_NAMES = ["bool"] + NUMERIC_NAMES
 
+DataType = TypeVar("DataType")
+
 
 class PrettyArrayModule:
     """Wrapper for array modules so that they may have nice reprs."""
@@ -93,7 +96,7 @@ class PrettyArrayModule:
         return repr(self)
 
 
-@check_function
+@check_function  # type: ignore
 def check_xp_attributes(xp: PrettyArrayModule, attributes: List[str]) -> None:
     missing_attrs = [attr for attr in attributes if not hasattr(xp, attr)]
     if len(missing_attrs) > 0:
@@ -127,7 +130,7 @@ def warn_on_missing_dtypes(xp: PrettyArrayModule, stubs: List[str]) -> None:
 
 
 def find_castable_builtin_for_dtype(
-    xp: PrettyArrayModule, dtype: Type
+    xp: PrettyArrayModule, dtype: DataType
 ) -> Type[Union[bool, int, float]]:
     """Returns builtin type which can have values that are castable to the given
     dtype, according to :xp-ref:`type promotion rules <type_promotion.html>`.
@@ -158,8 +161,8 @@ def find_castable_builtin_for_dtype(
     raise InvalidArgument("dtype {dtype} not recognised in {xp}")
 
 
-@check_function
-def dtype_from_name(xp: PrettyArrayModule, name: str) -> Type:
+@check_function  # type: ignore
+def dtype_from_name(xp: PrettyArrayModule, name: str) -> DataType:
     if name in DTYPE_NAMES:
         try:
             return getattr(xp, name)
@@ -177,7 +180,7 @@ def dtype_from_name(xp: PrettyArrayModule, name: str) -> Type:
 
 def _from_dtype(
     xp: PrettyArrayModule,
-    dtype: Union[Type, str],
+    dtype: Union[DataType, str],
     *,
     min_value: Optional[Union[int, float]] = None,
     max_value: Optional[Union[int, float]] = None,
@@ -403,7 +406,7 @@ class ArrayStrategy(st.SearchStrategy):
 
 def _arrays(
     xp: PrettyArrayModule,
-    dtype: Union[Type, str, st.SearchStrategy[Type], st.SearchStrategy[str]],
+    dtype: Union[DataType, str, st.SearchStrategy[DataType], st.SearchStrategy[str]],
     shape: Union[int, Shape, st.SearchStrategy[Shape]],
     *,
     elements: Optional[st.SearchStrategy] = None,
@@ -519,8 +522,10 @@ def _arrays(
     return ArrayStrategy(xp, elements, dtype, shape, fill, unique)
 
 
-@check_function
-def check_dtypes(xp: PrettyArrayModule, dtypes: List[Type], stubs: List[str]) -> None:
+@check_function  # type: ignore
+def check_dtypes(
+    xp: PrettyArrayModule, dtypes: List[DataType], stubs: List[str]
+) -> None:
     if len(dtypes) == 0:
         f_stubs = ", ".join(stubs)
         raise InvalidArgument(
@@ -531,12 +536,12 @@ def check_dtypes(xp: PrettyArrayModule, dtypes: List[Type], stubs: List[str]) ->
         warn_on_missing_dtypes(xp, stubs)
 
 
-def _scalar_dtypes(xp: PrettyArrayModule) -> st.SearchStrategy[Type]:
+def _scalar_dtypes(xp: PrettyArrayModule) -> st.SearchStrategy[DataType]:
     """Return a strategy for all :xp-ref:`valid dtype <data_types.html>` objects."""
     return st.one_of(_boolean_dtypes(xp), _numeric_dtypes(xp))
 
 
-def _boolean_dtypes(xp: PrettyArrayModule) -> st.SearchStrategy[Type]:
+def _boolean_dtypes(xp: PrettyArrayModule) -> st.SearchStrategy[DataType]:
     """Return a strategy for just the boolean dtype object."""
     try:
         return st.just(xp.bool)
@@ -546,7 +551,7 @@ def _boolean_dtypes(xp: PrettyArrayModule) -> st.SearchStrategy[Type]:
         ) from None
 
 
-def _numeric_dtypes(xp: PrettyArrayModule) -> st.SearchStrategy[Type]:
+def _numeric_dtypes(xp: PrettyArrayModule) -> st.SearchStrategy[DataType]:
     """Return a strategy for all numeric dtype objects."""
     return st.one_of(
         _integer_dtypes(xp),
@@ -555,7 +560,7 @@ def _numeric_dtypes(xp: PrettyArrayModule) -> st.SearchStrategy[Type]:
     )
 
 
-@check_function
+@check_function  # type: ignore
 def check_valid_sizes(
     category: str, sizes: Sequence[int], valid_sizes: Sequence[int]
 ) -> None:
@@ -579,7 +584,7 @@ def numeric_dtype_names(base_name: str, sizes: Sequence[int]) -> Iterator[str]:
 
 def _integer_dtypes(
     xp: PrettyArrayModule, *, sizes: Union[int, Sequence[int]] = (8, 16, 32, 64)
-) -> st.SearchStrategy[Type]:
+) -> st.SearchStrategy[DataType]:
     """Return a strategy for signed integer dtype objects.
 
     ``sizes`` contains the signed integer sizes in bits, defaulting to
@@ -597,7 +602,7 @@ def _integer_dtypes(
 
 def _unsigned_integer_dtypes(
     xp: PrettyArrayModule, *, sizes: Union[int, Sequence[int]] = (8, 16, 32, 64)
-) -> st.SearchStrategy[Type]:
+) -> st.SearchStrategy[DataType]:
     """Return a strategy for unsigned integer dtype objects.
 
     ``sizes`` contains the unsigned integer sizes in bits, defaulting to
@@ -618,7 +623,7 @@ def _unsigned_integer_dtypes(
 
 def _floating_dtypes(
     xp: PrettyArrayModule, *, sizes: Union[int, Sequence[int]] = (32, 64)
-) -> st.SearchStrategy[Type]:
+) -> st.SearchStrategy[DataType]:
     """Return a strategy for floating-point dtype objects.
 
     ``sizes`` contains the floating-point sizes in bits, defaulting to
@@ -766,7 +771,7 @@ def make_strategies_namespace(xp: Any) -> SimpleNamespace:
 
     @defines_strategy(force_reusable_values=True)
     def from_dtype(
-        dtype: Union[Type, str],
+        dtype: Union[DataType, str],
         *,
         min_value: Optional[Union[int, float]] = None,
         max_value: Optional[Union[int, float]] = None,
@@ -788,7 +793,9 @@ def make_strategies_namespace(xp: Any) -> SimpleNamespace:
 
     @defines_strategy(force_reusable_values=True)
     def arrays(
-        dtype: Union[Type, str, st.SearchStrategy[Type], st.SearchStrategy[str]],
+        dtype: Union[
+            DataType, str, st.SearchStrategy[DataType], st.SearchStrategy[str]
+        ],
         shape: Union[int, Shape, st.SearchStrategy[Shape]],
         *,
         elements: Optional[st.SearchStrategy] = None,
@@ -805,33 +812,33 @@ def make_strategies_namespace(xp: Any) -> SimpleNamespace:
         )
 
     @defines_strategy()
-    def scalar_dtypes() -> st.SearchStrategy[Type]:
+    def scalar_dtypes() -> st.SearchStrategy[DataType]:
         return _scalar_dtypes(xp)
 
     @defines_strategy()
-    def boolean_dtypes() -> st.SearchStrategy[Type]:
+    def boolean_dtypes() -> st.SearchStrategy[DataType]:
         return _boolean_dtypes(xp)
 
     @defines_strategy()
-    def numeric_dtypes() -> st.SearchStrategy[Type]:
+    def numeric_dtypes() -> st.SearchStrategy[DataType]:
         return _numeric_dtypes(xp)
 
     @defines_strategy()
     def integer_dtypes(
         *, sizes: Union[int, Sequence[int]] = (8, 16, 32, 64)
-    ) -> st.SearchStrategy[Type]:
+    ) -> st.SearchStrategy[DataType]:
         return _integer_dtypes(xp, sizes=sizes)
 
     @defines_strategy()
     def unsigned_integer_dtypes(
         *, sizes: Union[int, Sequence[int]] = (8, 16, 32, 64)
-    ) -> st.SearchStrategy[Type]:
+    ) -> st.SearchStrategy[DataType]:
         return _unsigned_integer_dtypes(xp, sizes=sizes)
 
     @defines_strategy()
     def floating_dtypes(
         *, sizes: Union[int, Sequence[int]] = (32, 64)
-    ) -> st.SearchStrategy[Type]:
+    ) -> st.SearchStrategy[DataType]:
         return _floating_dtypes(xp, sizes=sizes)
 
     from_dtype.__doc__ = _from_dtype.__doc__

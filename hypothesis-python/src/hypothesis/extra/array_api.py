@@ -41,12 +41,14 @@ from hypothesis.extra._array_helpers import (
     Shape,
     array_shapes,
     broadcastable_shapes,
+    check_argument,
     check_valid_dims,
     mutually_broadcastable_shapes as _mutually_broadcastable_shapes,
     order_check,
     valid_tuple_axes as _valid_tuple_axes,
 )
 from hypothesis.internal.conjecture import utils as cu
+from hypothesis.internal.coverage import check_function
 from hypothesis.internal.reflection import proxies
 from hypothesis.internal.validation import (
     check_type,
@@ -91,6 +93,7 @@ class PrettyArrayModule:
         return repr(self)
 
 
+@check_function
 def check_xp_attributes(xp: PrettyArrayModule, attributes: List[str]) -> None:
     missing_attrs = [attr for attr in attributes if not hasattr(xp, attr)]
     if len(missing_attrs) > 0:
@@ -155,6 +158,7 @@ def find_castable_builtin_for_dtype(
     raise InvalidArgument("dtype {dtype} not recognised in {xp}")
 
 
+@check_function
 def dtype_from_name(xp: PrettyArrayModule, name: str) -> Type:
     if name in DTYPE_NAMES:
         try:
@@ -206,14 +210,14 @@ def _from_dtype(
     def check_valid_minmax(prefix, val, info_obj):
         name = f"{prefix}_value"
         check_valid_bound(val, name)
-        if val < info_obj.min:
-            raise InvalidArgument(
-                f"dtype {dtype} requires {name}={val} to be at least {info_obj.min}"
-            )
-        elif val > info_obj.max:
-            raise InvalidArgument(
-                f"dtype {dtype} requires {name}={val} to be at most {info_obj.max}"
-            )
+        check_argument(
+            val >= info_obj.min,
+            f"dtype {dtype} requires {name}={val} to be at least {info_obj.min}",
+        )
+        check_argument(
+            val <= info_obj.max,
+            f"dtype {dtype} requires {name}={val} to be at most {info_obj.max}",
+        )
 
     if builtin is bool:
         return st.booleans()
@@ -493,10 +497,10 @@ def _arrays(
 
     if isinstance(shape, int):
         shape = (shape,)
-    if not all(isinstance(s, int) for s in shape):
-        raise InvalidArgument(
-            f"Array shape must be integer in each dimension, provided shape was {shape}"
-        )
+    check_argument(
+        all(isinstance(s, int) for s in shape),
+        f"Array shape must be integer in each dimension, provided shape was {shape}",
+    )
 
     if elements is None:
         elements = _from_dtype(xp, dtype)
@@ -515,6 +519,7 @@ def _arrays(
     return ArrayStrategy(xp, elements, dtype, shape, fill, unique)
 
 
+@check_function
 def check_dtypes(xp: PrettyArrayModule, dtypes: List[Type], stubs: List[str]) -> None:
     if len(dtypes) == 0:
         f_stubs = ", ".join(stubs)
@@ -550,6 +555,7 @@ def _numeric_dtypes(xp: PrettyArrayModule) -> st.SearchStrategy[Type]:
     )
 
 
+@check_function
 def check_valid_sizes(
     category: str, sizes: Sequence[int], valid_sizes: Sequence[int]
 ) -> None:
@@ -695,8 +701,14 @@ def indices(
     * ``allow_newaxis`` specifies whether ``None`` is allowed in the index.
     """
     check_type(tuple, shape, "shape")
-    if len(shape) == 0:
-        raise InvalidArgument("No valid indices for zero-dimensional arrays")
+    check_argument(
+        all(isinstance(x, int) and x >= 0 for x in shape),
+        f"shape={shape!r}, but all dimensions must be of integer size >= 0",
+    )
+    check_argument(
+        len(shape) != 0,
+        "No valid indices for zero-dimensional arrays",
+    )
     check_type(bool, allow_ellipsis, "allow_ellipsis")
     check_type(bool, allow_newaxis, "allow_newaxis")
     check_type(int, min_dims, "min_dims")
@@ -709,10 +721,6 @@ def indices(
 
     order_check("dims", 1, min_dims, max_dims)
 
-    if not all(isinstance(x, int) and x >= 0 for x in shape):
-        raise InvalidArgument(
-            f"shape={shape!r}, but all dimensions must be of integer size >= 0"
-        )
     return BasicIndexStrategy(
         shape,
         min_dims=min_dims,

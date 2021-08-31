@@ -18,7 +18,7 @@ import pytest
 from hypothesis import given
 from hypothesis.extra.array_api import DTYPE_NAMES, INT_NAMES, NUMERIC_NAMES, UINT_NAMES
 
-from tests.array_api.xputils import xp, xps
+from tests.array_api.common import xp, xps
 from tests.common.debug import minimal
 
 pytestmark = [pytest.mark.mockable_xp]

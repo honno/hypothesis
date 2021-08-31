@@ -19,7 +19,7 @@ import pytest
 
 from hypothesis import assume, given, strategies as st
 
-from tests.array_api.xputils import xp, xps
+from tests.array_api.common import xp, xps
 from tests.common.debug import find_any
 
 pytestmark = [pytest.mark.mockable_xp]

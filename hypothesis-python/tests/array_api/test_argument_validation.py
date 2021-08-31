@@ -17,7 +17,7 @@ import pytest
 
 from hypothesis.errors import InvalidArgument
 
-from tests.array_api.xputils import xp, xps
+from tests.array_api.common import xp, xps
 
 pytestmark = [pytest.mark.mockable_xp]
 

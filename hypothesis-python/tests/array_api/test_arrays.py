@@ -19,7 +19,7 @@ from hypothesis import assume, given, strategies as st
 from hypothesis.errors import InvalidArgument, Unsatisfiable
 from hypothesis.extra.array_api import DTYPE_NAMES, NUMERIC_NAMES
 
-from tests.array_api.xputils import COMPLIANT_XP, xp, xps
+from tests.array_api.common import COMPLIANT_XP, xp, xps
 from tests.common.debug import find_any, minimal
 from tests.common.utils import fails_with, flaky
 

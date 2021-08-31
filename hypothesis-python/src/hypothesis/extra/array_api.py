@@ -850,3 +850,46 @@ def make_strategies_namespace(xp: Any) -> SimpleNamespace:
         mutually_broadcastable_shapes=mutually_broadcastable_shapes,
         indices=indices,
     )
+
+
+try:
+    import numpy as np
+
+    mock_xp = SimpleNamespace(
+        __name__="mockpy",
+        # Data types
+        int8=np.int8,
+        int16=np.int16,
+        int32=np.int32,
+        int64=np.int64,
+        uint8=np.uint8,
+        uint16=np.uint16,
+        uint32=np.uint32,
+        uint64=np.uint64,
+        float32=np.float32,
+        float64=np.float64,
+        bool=np.bool_,
+        # Methods
+        iinfo=np.iinfo,
+        finfo=np.finfo,
+        asarray=np.asarray,
+        reshape=np.reshape,
+        empty=np.empty,
+        zeros=np.zeros,
+        ones=np.ones,
+        arange=np.arange,
+        full=np.full,
+        any=np.any,
+        all=np.all,
+        isfinite=np.isfinite,
+        nonzero=np.nonzero,
+        unique=np.unique,
+        sum=np.sum,
+        isnan=np.isnan,
+        broadcast_arrays=np.broadcast_arrays,
+        logical_or=np.logical_or,
+        # Constants
+        nan=np.nan,
+    )
+except ImportError:
+    pass

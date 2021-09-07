@@ -161,6 +161,8 @@ def test_minimize_large_uint_arrays():
     if hasattr(xp, "nonzero"):
         idx = xp.nonzero(smallest)[0]
         assert idx.size in (1, smallest.size - 1)
+    else:
+        pytest.skip()
 
 
 @pytest.mark.filterwarnings("ignore::RuntimeWarning")

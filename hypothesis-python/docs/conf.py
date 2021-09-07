@@ -16,6 +16,7 @@
 import datetime
 import os
 import sys
+import types
 
 import sphinx_rtd_theme
 
@@ -58,6 +59,14 @@ with open(
 def setup(app):
     if os.path.isfile(os.path.join(os.path.dirname(__file__), "..", "RELEASE.rst")):
         app.tags.add("has_release_file")
+
+    # patch in mock array_api namespace so we can autodoc it
+    from hypothesis.extra.array_api import mock_xp, make_strategies_namespace
+
+    mod = types.ModuleType("xps")
+    mod.__dict__.update(make_strategies_namespace(mock_xp).__dict__)
+    assert "xps" not in sys.modules
+    sys.modules["xps"] = mod
 
 
 language = None

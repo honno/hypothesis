@@ -53,21 +53,40 @@ Releases that are not the latest patch release of their minor version are not
 tested or officially supported, but will probably also work unless you hit a
 pandas bug.
 
+.. _array-api:
+
 ---------
 Array API
 ---------
 
+.. tip::
+   The Array API standard is not yet finalised, so this module will make breaking
+   changes if necessary to support newer versions of the standard.
+
 Hypothesis offers strategies for `Array API <https://data-apis.org/>`_ adopting
 libraries in the ``hypothesis.extra.array_api`` package. See :issue:`3037` for
-more details.
+more details.  If you want to test with :pypi:`cupy`, :pypi:`dask`, :pypi:`jax`,
+:pypi:`MXNet`, :pypi:`PyTorch <torch>`, :pypi:`Tensorflow`, or :pypi:`Xarray` -
+or just ``numpy.array_api`` - this is the extension for you!
 
-Similar to the NumPy extra, :func:`~hypothesis.extra.array_api.arrays` is
-provided to generate arrays along with other useful strategies.
+.. autofunction:: hypothesis.extra.array_api.make_strategies_namespace
 
-.. warning::
-   The Array API standard is not yet finalised. We may therefore make breaking
-   changes in minor releases if necessary to support newer versions of the
-   standard.
+The resulting namespace contains all our familiar strategies like
+:func:`~xps.arrays` and :func:`~xps.from_dtype`, but based on the array-API
+standard semantics and returning objects from the ``xp`` module:
 
-.. automodule:: hypothesis.extra.array_api
+.. automodule:: xps
    :members:
+        from_dtype,
+        arrays,
+        array_shapes,
+        scalar_dtypes,
+        boolean_dtypes,
+        numeric_dtypes,
+        integer_dtypes,
+        unsigned_integer_dtypes,
+        floating_dtypes,
+        valid_tuple_axes,
+        broadcastable_shapes,
+        mutually_broadcastable_shapes,
+        indices,

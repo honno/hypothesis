@@ -14,6 +14,7 @@
 # END HEADER
 
 import math
+import sys
 from collections import defaultdict
 from numbers import Real
 from types import SimpleNamespace
@@ -742,7 +743,6 @@ def make_strategies_namespace(xp: Any) -> SimpleNamespace:
 
     A :obj:`python:types.SimpleNamespace` is returned which contains all the
     strategy methods in this module but without requiring the ``xp`` argument.
-
     Creating and using a strategies namespace for NumPy's Array API
     implementation would go like this:
 
@@ -869,7 +869,15 @@ def make_strategies_namespace(xp: Any) -> SimpleNamespace:
 
 try:
     import numpy as np
+except ImportError:
+    if "sphinx" in sys.modules:
+        # This is pretty awkward, but also the best way available
+        from unittest.mock import Mock
 
+        np = Mock()
+    else:
+        np = None
+if np is not None:
     mock_xp = SimpleNamespace(
         __name__="mockpy",
         # Data types
@@ -906,5 +914,3 @@ try:
         # Constants
         nan=np.nan,
     )
-except ImportError:
-    pass

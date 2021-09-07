@@ -329,21 +329,14 @@ class ArrayStrategy(st.SearchStrategy):
 
             if self.unique:
                 seen = set()
-                elements = cu.many(
-                    data,
+                elems = st.lists(
+                    self.elements_strategy,
                     min_size=self.array_size,
                     max_size=self.array_size,
-                    average_size=self.array_size,
+                    unique=True,
                 )
-                i = 0
-                while elements.more():
-                    val = data.draw(self.elements_strategy)
-                    if val in seen:
-                        elements.reject()
-                    else:
-                        seen.add(val)
-                        self.set_value(result, i, val)
-                        i += 1
+                for i, v in enumerate(data.draw(elems)):
+                    self.set_value(result, i, v)
             else:
                 for i in range(self.array_size):
                     val = data.draw(self.elements_strategy)
@@ -892,25 +885,35 @@ if np is not None:
         float32=np.float32,
         float64=np.float64,
         bool=np.bool_,
-        # Methods
-        iinfo=np.iinfo,
-        finfo=np.finfo,
-        asarray=np.asarray,
-        reshape=np.reshape,
-        empty=np.empty,
-        zeros=np.zeros,
-        ones=np.ones,
-        arange=np.arange,
-        full=np.full,
-        any=np.any,
-        all=np.all,
-        isfinite=np.isfinite,
-        nonzero=np.nonzero,
-        unique=np.unique,
-        sum=np.sum,
-        isnan=np.isnan,
-        broadcast_arrays=np.broadcast_arrays,
-        logical_or=np.logical_or,
         # Constants
         nan=np.nan,
+        # Data type functions
+        iinfo=np.iinfo,
+        finfo=np.finfo,
+        broadcast_arrays=np.broadcast_arrays,
+        # Creation functions
+        arange=np.arange,
+        asarray=np.asarray,
+        empty=np.empty,
+        full=np.full,
+        zeros=np.zeros,
+        ones=np.ones,
+        linspace=np.linspace,
+        # Manipulation functions
+        reshape=np.reshape,
+        # Element-wise functions
+        isnan=np.isnan,
+        isfinite=np.isfinite,
+        logical_or=np.logical_or,
+        # Statistical functions
+        sum=np.sum,
+        # Searching functions
+        nonzero=np.nonzero,
+        # Sorting functions
+        sort=np.sort,
+        # Set functions
+        unique=np.unique,
+        # Utility functions
+        any=np.any,
+        all=np.all,
     )

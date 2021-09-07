@@ -16,7 +16,7 @@
 import pytest
 
 from hypothesis import assume, given, strategies as st
-from hypothesis.errors import InvalidArgument, Unsatisfiable
+from hypothesis.errors import InvalidArgument
 from hypothesis.extra.array_api import DTYPE_NAMES, NUMERIC_NAMES
 
 from tests.array_api.common import COMPLIANT_XP, xp, xps
@@ -238,7 +238,7 @@ def test_cannot_draw_unique_arrays_with_too_small_elements():
     """Unique strategy with elements strategy range smaller than its size raises
     helpful error."""
     strat = xps.arrays(xp.int8, 10, elements=st.integers(0, 5), unique=True)
-    with pytest.raises(Unsatisfiable):
+    with pytest.raises(InvalidArgument):
         strat.example()
 
 
@@ -393,8 +393,8 @@ def test_is_still_unique_with_nan_fill(x):
     )
 )
 def test_unique_array_with_fill_can_use_all_elements(x):
-    """Unique strategy with elements range equivalent to its size can generate
-    arrays with all possible values."""
+    """Unique strategy with elements range equivalent to its size and NaN fill
+    can generate arrays with all possible values."""
     if hasattr(xp, "unique"):
         assume(count_unique(x) == x.size)
     else:
@@ -412,6 +412,38 @@ def test_generate_unique_arrays_without_fill(x):
     """
     if hasattr(xp, "unique"):
         assume(count_unique(x) == x.size)
+    else:
+        pytest.skip()
+
+
+@given(xps.arrays(dtype=xp.int8, shape=255, unique=True))
+def test_efficiently_generate_unique_arrays_using_all_elements(x):
+    """Unique strategy with elements strategy range equivalent to its size
+    generates arrays with all possible values. Generation is not too slow.
+
+    Avoids the birthday paradox with UniqueSampledListStrategy.
+    """
+    if hasattr(xp, "unique"):
+        assert count_unique(x) == x.size
+    else:
+        pytest.skip()
+
+
+@given(st.data(), st.integers(-100, 100), st.integers(1, 100))
+def test_array_element_rewriting(data, start, size):
+    """Unique strategy generates arrays with expected elements."""
+    if hasattr(xp, "unique"):
+        x = data.draw(
+            xps.arrays(
+                dtype=xp.int64,
+                shape=size,
+                elements=st.integers(start, start + size - 1),
+                unique=True,
+            )
+        )
+        x_set_expect = xp.linspace(start, start + size - 1, size, dtype=xp.int64)
+        x_set = xp.sort(xp.unique(x))
+        assert xp.all(x_set == x_set_expect)
     else:
         pytest.skip()
 

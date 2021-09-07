@@ -26,46 +26,46 @@ from tests.common.utils import fails_with, flaky
 pytestmark = [pytest.mark.mockable_xp]
 
 
-def assert_array_namespace(array):
+def assert_array_namespace(x):
     """Check array has __array_namespace__() and it returns the correct module.
 
     This check is skipped if a mock array module is being used.
     """
     if COMPLIANT_XP:
-        assert array.__array_namespace__() is xp
+        assert x.__array_namespace__() is xp
 
 
 @given(xps.scalar_dtypes(), st.data())
 def test_draw_arrays_from_dtype(dtype, data):
     """Draw arrays from dtypes."""
-    array = data.draw(xps.arrays(dtype, ()))
-    assert array.dtype == dtype
-    assert_array_namespace(array)
+    x = data.draw(xps.arrays(dtype, ()))
+    assert x.dtype == dtype
+    assert_array_namespace(x)
 
 
 @given(st.sampled_from(DTYPE_NAMES), st.data())
 def test_draw_arrays_from_scalar_names(name, data):
     """Draw arrays from dtype names."""
-    array = data.draw(xps.arrays(name, ()))
-    assert array.dtype == getattr(xp, name)
-    assert_array_namespace(array)
+    x = data.draw(xps.arrays(name, ()))
+    assert x.dtype == getattr(xp, name)
+    assert_array_namespace(x)
 
 
 @given(xps.array_shapes(), st.data())
 def test_draw_arrays_from_shapes(shape, data):
     """Draw arrays from shapes."""
-    array = data.draw(xps.arrays(xp.int8, shape))
-    assert array.ndim == len(shape)
-    assert array.shape == shape
-    assert_array_namespace(array)
+    x = data.draw(xps.arrays(xp.int8, shape))
+    assert x.ndim == len(shape)
+    assert x.shape == shape
+    assert_array_namespace(x)
 
 
 @given(st.integers(0, 10), st.data())
 def test_draw_arrays_from_int_shapes(size, data):
     """Draw arrays from integers as shapes."""
-    array = data.draw(xps.arrays(xp.int8, size))
-    assert array.shape == (size,)
-    assert_array_namespace(array)
+    x = data.draw(xps.arrays(xp.int8, size))
+    assert x.shape == (size,)
+    assert_array_namespace(x)
 
 
 @pytest.mark.parametrize(
@@ -81,49 +81,49 @@ def test_draw_arrays_from_int_shapes(size, data):
 @given(st.data())
 def test_draw_arrays_from_dtype_strategies(strat, data):
     """Draw arrays from dtype strategies."""
-    array = data.draw(xps.arrays(strat, ()))
-    assert_array_namespace(array)
+    x = data.draw(xps.arrays(strat, ()))
+    assert_array_namespace(x)
 
 
 @given(st.lists(st.sampled_from(DTYPE_NAMES), min_size=1, unique=True), st.data())
 def test_draw_arrays_from_dtype_name_strategies(names, data):
     """Draw arrays from dtype name strategies."""
     names_strategy = st.sampled_from(names)
-    array = data.draw(xps.arrays(names_strategy, ()))
-    assert_array_namespace(array)
+    x = data.draw(xps.arrays(names_strategy, ()))
+    assert_array_namespace(x)
 
 
 @given(xps.arrays(xp.int8, xps.array_shapes()))
-def test_generate_arrays_from_shapes_strategy(array):
+def test_generate_arrays_from_shapes_strategy(x):
     """Generate arrays from shapes strategy."""
-    assert_array_namespace(array)
+    assert_array_namespace(x)
 
 
 @given(xps.arrays(xp.int8, st.integers(0, 100)))
-def test_generate_arrays_from_integers_strategy_as_shape(array):
+def test_generate_arrays_from_integers_strategy_as_shape(x):
     """Generate arrays from integers strategy as shapes strategy."""
-    assert_array_namespace(array)
+    assert_array_namespace(x)
 
 
 @given(xps.arrays(xp.int8, ()))
-def test_generate_arrays_from_zero_dimensions(array):
+def test_generate_arrays_from_zero_dimensions(x):
     """Generate arrays from empty shape."""
-    assert array.shape == ()
-    assert_array_namespace(array)
+    assert x.shape == ()
+    assert_array_namespace(x)
 
 
 @given(xps.arrays(xp.int8, (1, 0, 1)))
-def test_handle_zero_dimensions(array):
+def test_handle_zero_dimensions(x):
     """Generate arrays from empty shape."""
-    assert array.shape == (1, 0, 1)
-    assert_array_namespace(array)
+    assert x.shape == (1, 0, 1)
+    assert_array_namespace(x)
 
 
 @given(xps.arrays(xp.uint32, (5, 5)))
-def test_generate_arrays_from_unsigned_ints(array):
+def test_generate_arrays_from_unsigned_ints(x):
     """Generate arrays from unsigned integer dtype."""
-    assert xp.all(array >= 0)
-    assert_array_namespace(array)
+    assert xp.all(x >= 0)
+    assert_array_namespace(x)
 
 
 def test_minimize_arrays_with_default_dtype_shape_strategies():
@@ -183,7 +183,7 @@ def test_minimizes_to_fill():
     assert xp.all(smallest == 3.0)
 
 
-def count_unique(array):
+def count_unique(x):
     """Returns the number of unique elements.
     NaN values are treated as unique to each other.
 
@@ -192,7 +192,7 @@ def count_unique(array):
     """
     n_unique = 0
 
-    nan_index = xp.isnan(array)
+    nan_index = xp.isnan(x)
     for isnan, count in zip(*xp.unique(nan_index, return_counts=True)):
         if isnan:
             n_unique += count
@@ -201,9 +201,9 @@ def count_unique(array):
     # TODO: The Array API makes boolean indexing optional, so in the future this
     # will need to be reworked if we want to test libraries other than NumPy.
     # If not possible, errors should be caught and the test skipped.
-    filtered_array = array[~nan_index]
-    unique_array = xp.unique(filtered_array)
-    n_unique += unique_array.size
+    filtered_x = x[~nan_index]
+    unique_x = xp.unique(filtered_x)
+    n_unique += unique_x.size
 
     return n_unique
 
@@ -215,19 +215,19 @@ def count_unique(array):
         shape=xps.array_shapes(),
     )
 )
-def test_count_unique(array):
+def test_count_unique(x):
     """Utility counts unique elements of arrays generated by unique strategy."""
     if hasattr(xp, "unique"):
-        assert count_unique(array) == array.size
+        assert count_unique(x) == x.size
     else:
         pytest.skip()
 
 
 @given(xps.arrays(xp.int8, st.integers(0, 20), unique=True))
-def test_generate_unique_arrays(array):
+def test_generate_unique_arrays(x):
     """Generates unique arrays."""
     if hasattr(xp, "unique"):
-        assert count_unique(array) == array.size
+        assert count_unique(x) == x.size
     else:
         pytest.skip()
 
@@ -256,17 +256,17 @@ def test_cannot_fill_arrays_with_non_castable_value():
         unique=True,
     )
 )
-def test_generate_unique_arrays_with_high_collision_elements(array):
+def test_generate_unique_arrays_with_high_collision_elements(x):
     """Generates unique arrays with just elements of 0.0 and NaN fill."""
-    assert xp.sum(array == 0.0) <= 1
+    assert xp.sum(x == 0.0) <= 1
 
 
 @given(xps.arrays(xp.int8, (4,), elements=st.integers(0, 3), unique=True))
-def test_generate_unique_arrays_using_all_elements(array):
+def test_generate_unique_arrays_using_all_elements(x):
     """Unique strategy with elements strategy range equal to its size will only
     generate arrays with one of each possible element."""
     if hasattr(xp, "unique"):
-        assert count_unique(array) == array.size
+        assert count_unique(x) == x.size
     else:
         pytest.skip()
 
@@ -338,11 +338,11 @@ def test_may_not_use_unrepresentable_elements(fill, dtype, strat, data):
 @given(
     xps.arrays(dtype=xp.float32, shape=10, elements={"min_value": 0, "max_value": 1})
 )
-def test_floats_can_be_constrained(array):
+def test_floats_can_be_constrained(x):
     """Strategy with float dtype and specified elements strategy range
     (inclusive) generates arrays with elements inside said range."""
-    assert xp.all(array >= 0)
-    assert xp.all(array <= 1)
+    assert xp.all(x >= 0)
+    assert xp.all(x <= 1)
 
 
 @given(
@@ -357,11 +357,11 @@ def test_floats_can_be_constrained(array):
         },
     )
 )
-def test_floats_can_be_constrained_excluding_endpoints(array):
+def test_floats_can_be_constrained_excluding_endpoints(x):
     """Strategy with float dtype and specified elements strategy range
     (exclusive) generates arrays with elements inside said range."""
-    assert xp.all(array > 0)
-    assert xp.all(array < 1)
+    assert xp.all(x > 0)
+    assert xp.all(x < 1)
 
 
 @given(
@@ -373,10 +373,10 @@ def test_floats_can_be_constrained_excluding_endpoints(array):
         fill=st.just(xp.nan),
     )
 )
-def test_is_still_unique_with_nan_fill(array):
+def test_is_still_unique_with_nan_fill(x):
     """Unique strategy with NaN fill generates unique arrays."""
     if hasattr(xp, "unique"):
-        assert count_unique(array) == array.size
+        assert count_unique(x) == x.size
     else:
         pytest.skip()
 
@@ -390,17 +390,17 @@ def test_is_still_unique_with_nan_fill(array):
         fill=st.just(xp.nan),
     )
 )
-def test_unique_array_with_fill_can_use_all_elements(array):
+def test_unique_array_with_fill_can_use_all_elements(x):
     """Unique strategy with elements range equivalent to its size can generate
     arrays with all possible values."""
     if hasattr(xp, "unique"):
-        assume(count_unique(array) == array.size)
+        assume(count_unique(x) == x.size)
     else:
         pytest.skip()
 
 
 @given(xps.arrays(dtype=xp.uint8, shape=25, unique=True, fill=st.nothing()))
-def test_generate_unique_arrays_without_fill(array):
+def test_generate_unique_arrays_without_fill(x):
     """Generate arrays from unique strategy with no fill.
 
     Covers the collision-related branches for fully dense unique arrays.
@@ -409,16 +409,16 @@ def test_generate_unique_arrays_without_fill(array):
     still be easy.
     """
     if hasattr(xp, "unique"):
-        assume(count_unique(array) == array.size)
+        assume(count_unique(x) == x.size)
     else:
         pytest.skip()
 
 
 @given(xps.arrays(xp.bool, (), fill=st.nothing()))
-def test_generate_0d_arrays_with_no_fill(array):
+def test_generate_0d_arrays_with_no_fill(x):
     """Generate arrays with zero-dimensions and no fill."""
-    assert array.dtype == xp.bool
-    assert array.shape == ()
+    assert x.dtype == xp.bool
+    assert x.shape == ()
 
 
 @pytest.mark.parametrize("dtype", [xp.float32, xp.float64])
@@ -436,8 +436,8 @@ def test_excluded_min_in_float_arrays(dtype, low, data):
             "exclude_min": True,
         },
     )
-    array = data.draw(strat, label="array")
-    assert xp.all(array > low)
+    x = data.draw(strat, label="array")
+    assert xp.all(x > low)
 
 
 @st.composite
@@ -449,11 +449,11 @@ def distinct_integers(draw):
 
 
 @given(xps.arrays(xp.uint64, 10, elements=distinct_integers()))
-def test_does_not_reuse_distinct_integers(array):
+def test_does_not_reuse_distinct_integers(x):
     """Strategy with distinct integer elements strategy generates arrays with
     distinct values."""
     if hasattr(xp, "unique"):
-        assert count_unique(array) == array.size
+        assert count_unique(x) == x.size
     else:
         pytest.skip()
 
